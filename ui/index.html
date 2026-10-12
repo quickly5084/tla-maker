@@ -7,23 +7,22 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header id="top">
-  <div id="msg" data-scan title="Toucher pour lire le message"></div>
-  <div id="acts">
-    <button id="b-del" data-scan title="Supprimer le dernier mot">⌫</button>
-    <button id="b-clr" data-scan title="Tout effacer">✕</button>
-    <button id="b-spk" data-scan title="Lire le message">🔊</button>
-  </div>
-</header>
 <nav id="tb">
-  <button id="back" data-scan>◀ Retour</button>
-  <button id="home" data-scan>⌂ Accueil</button>
+  <button id="back" data-scan title="Retour">◀</button>
+  <button id="home" data-scan title="Accueil">⌂</button>
+  <button id="srch" data-scan title="Rechercher un mot">🔍</button>
   <strong id="title"></strong>
-  <span class="sp"></span>
-  <button id="kb" data-scan title="Clavier avec prédiction">⌨ Clavier</button>
+  <button id="help" title="Aide">💡</button>
   <button id="edit" title="Mode édition">✎ Modifier</button>
   <button id="set" title="Réglages">⚙</button>
 </nav>
+<header id="top">
+  <button id="b-spk" data-scan title="Lire le message"><i>💬</i>Parler</button>
+  <div id="msg" data-scan title="Toucher pour lire le message"></div>
+  <button id="b-clr" data-scan title="Tout effacer"><i>✕</i>Effacer</button>
+  <button id="b-del" data-scan title="Supprimer le dernier mot"><i>⌫</i>Supprimer</button>
+  <button id="b-shr" data-scan title="Partager le message"><i>⤴</i>Partager</button>
+</header>
 <section id="eb" hidden>
   <select id="boards" title="Tableau"></select>
   <button id="bnew">+ Tableau</button><button id="bren">Renommer</button><button id="bdel">Supprimer</button>
@@ -37,7 +36,17 @@
   <div id="pred"></div>
   <div id="keys"></div>
 </section>
-<main id="grid"></main>
+<div id="body">
+  <aside id="side">
+    <button id="s-back" data-scan><i>◀</i>Retour</button>
+    <button id="s-core" data-scan><i>◎</i>Mots-noyau</button>
+    <button id="s-quick" data-scan><i>🔥</i>Phrases rapides</button>
+    <button id="s-topics" data-scan><i>💬</i>Thèmes</button>
+    <button id="kb" data-scan title="Clavier avec prédiction"><i>⌨</i>Clavier</button>
+    <button id="s-dash" data-scan><i>🎛</i>Tableau de bord</button>
+  </aside>
+  <main id="grid"></main>
+</div>
 <input id="file" type="file" accept=".obz,.obf,.json,application/zip,application/json" hidden>
 
 <dialog id="dlg">
@@ -55,6 +64,7 @@
         <option value=":space">Espace (valide le mot du clavier)</option>
         <option value=":home">Accueil</option>
         <option value=":back">Retour</option>
+        <option value=":forms">Formes de mots</option>
       </select>
     </label>
     <label id="f-lw">Tableau cible <select id="f-l"></select></label>
@@ -103,6 +113,39 @@
   </form>
 </dialog>
 
+<dialog id="sr">
+  <h3>Rechercher</h3>
+  <input id="sr-q" type="search" placeholder="Un mot, un dossier…" autocomplete="off">
+  <div id="sr-r"></div>
+  <menu><button type="button" id="sr-x">Fermer</button></menu>
+</dialog>
+<dialog id="sh">
+  <h3>Partager le message</h3>
+  <p id="sh-t"></p>
+  <menu><button type="button" id="sh-c">Copier</button><button type="button" id="sh-f">Enregistrer .txt</button><button type="button" id="sh-x">Fermer</button></menu>
+</dialog>
+<dialog id="fm">
+  <h3>Formes de mots</h3>
+  <p id="fm-w"></p>
+  <div id="fm-r"></div>
+  <menu><button type="button" id="fm-x">Fermer</button></menu>
+</dialog>
+<dialog id="pp">
+  <h3 id="pp-t"></h3>
+  <div id="pp-g"></div>
+  <menu><button type="button" id="pp-x">Fermer</button></menu>
+</dialog>
+<dialog id="hp">
+  <h3>Aide</h3>
+  <ul>
+    <li>Touche une case pour ajouter un mot ; <b>Parler</b> lit le message.</li>
+    <li>Cases avec onglet : dossier. Cases <b>+</b> : liste de mots qui s'ouvre par-dessus.</li>
+    <li><b>Mots-noyau</b> : accueil. <b>Phrases rapides</b> : phrases toutes faites. <b>Thèmes</b> : listes de mots.</li>
+    <li><b>Formes de mots</b> : pluriel, féminin, conjugaison du dernier mot.</li>
+    <li><b>Modifier</b> : change, ajoute ou déplace des cases ; importe/exporte des tableaux (.obz).</li>
+  </ul>
+  <menu><button type="button" id="hp-x">Fermer</button></menu>
+</dialog>
 <dialog id="ask"><form method="dialog"><p id="ask-m"></p><input id="ask-i"><menu><button value="ok">OK</button><button value="cancel" id="ask-c" formnovalidate>Annuler</button></menu></form></dialog>
 <script src="emoji-fr.js"></script>
 <script src="pictos-index.js"></script>

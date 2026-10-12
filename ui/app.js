@@ -59,23 +59,25 @@ function say(text) {
   if (v) u.voice = v;
   speechSynthesis.speak(u);
 }
-const speakMsg = () => say(msg.map((m) => m.vocal || m.label).join(" "));
+const PUNCT = /^[.,;:!?…'’()«»-]+$/, NOBEFORE = /^[.,;:!?…)»'’]$/, NOAFTER = /^['’(«]$/;
+const speakMsg = () => say(msg.filter((m) => !m.p).map((m) => m.vocal || m.label).join(" "));
+const msgText = () => msg.reduce((t, m, i) => t + (i && !NOBEFORE.test(m.label) && !NOAFTER.test(msg[i - 1].label) ? " " : "") + m.label, "");
 
 // --- rendu ---
-function cellEl(b, board, r, c) {
+function cellEl(b, board, r, c, onPress = (x) => press(x, board)) {
   const d = document.createElement("div");
   d.dataset.r = r; d.dataset.c = c;
   if (!b) { d.className = "cell empty"; if (editing) d.onclick = () => openCell(r, c); return d; }
   const folder = !!b.load_board?.id;
-  d.className = "cell" + (folder ? " folder" : "") + (S.lab === "top" ? " top" : "");
+  d.className = "cell" + (folder ? " folder" : "") + (b.ext_tla_popup ? " plus" : "") + (S.lab === "top" ? " top" : "");
   d.style.background = b.background_color || "#fff";
   const bc = b.border_color || "#8a8f98";
   d.style.borderColor = bc; d.style.setProperty("--bc", bc);
   d.dataset.scan = "";
   const im = b.image_id && imgOf(board, b.image_id);
   if (im) { const i = document.createElement("img"); i.src = im; i.alt = ""; i.draggable = false; d.append(i); }
-  if (S.lab !== "none" || !im) { const l = document.createElement("span"); l.className = "lb"; l.textContent = b.label || ""; d.append(l); }
-  d.onclick = () => (editing ? openCell(r, c) : press(b));
+  if (S.lab !== "none" || !im) { const l = document.createElement("span"); l.className = "lb"; l.textContent = b.label || ""; if (/\S{11,}/.test(l.textContent)) l.style.fontSize = ".8em"; d.append(l); }
+  d.onclick = () => (editing ? openCell(r, c) : onPress(b));
   return d;
 }
 
@@ -83,7 +85,10 @@ function render() {
   const b = cur();
   document.title = "TLA Maker — " + b.name;
   $("title").textContent = b.name;
-  $("back").disabled = stack.length < 2;
+  $("back").disabled = $("s-back").disabled = stack.length < 2;
+  $("s-core").classList.toggle("on", curId() === db.root);
+  for (const [k, id] of [["s-quick", "quick"], ["s-topics", "themes"]]) { $(k).classList.toggle("on", curId() === id); $(k).disabled = !db.boards[id]; }
+  $("kb").classList.toggle("on", kbdOpen);
   $("eb").hidden = !editing;
   $("edit").classList.toggle("on", editing);
   document.body.classList.toggle("edit", editing);
@@ -120,15 +125,20 @@ function renderMsg() {
 
 // --- actions ---
 function addWord(item, speak = true) {
+  item.p = PUNCT.test(item.label);
   msg.push(item);
   const k = norm(item.label);
   db.hist[k] = (db.hist[k] || 0) + 1;
   renderMsg(); save();
-  if (speak && S.mode === "word") say(item.vocal || item.label);
+  if (speak && S.mode === "word" && !item.p) say(item.vocal || item.label);
 }
-function press(b) {
-  const board = cur(), a = b.action || "";
-  if (b.load_board?.id && db.boards[b.load_board.id]) { stack.push(b.load_board.id); return render(); }
+function press(b, board = cur()) {
+  const a = b.action || "";
+  if (b.load_board?.id && db.boards[b.load_board.id]) {
+    if (b.ext_tla_popup) return openPopup(b.load_board.id);
+    stack.push(b.load_board.id); return render();
+  }
+  if (a === ":forms") return openForms();
   if (a === ":speak") return speakMsg();
   if (a === ":clear") { msg = []; return renderMsg(); }
   if (a === ":backspace") { msg.pop(); return renderMsg(); }
@@ -142,8 +152,84 @@ $("b-spk").onclick = speakMsg;
 $("msg").onclick = speakMsg;
 $("b-del").onclick = () => { msg.pop(); renderMsg(); };
 $("b-clr").onclick = () => { msg = []; renderMsg(); };
-$("back").onclick = () => { stack.pop(); render(); };
-$("home").onclick = () => { stack = [db.root]; render(); };
+const goBack = () => { if (stack.length > 1) stack.pop(); render(); }, goHome = () => { stack = [db.root]; render(); };
+const goBoard = (id) => { if (db.boards[id]) { stack = id === db.root ? [id] : [db.root, id]; render(); } };
+$("back").onclick = $("s-back").onclick = goBack;
+$("home").onclick = $("s-core").onclick = goHome;
+$("s-quick").onclick = () => goBoard("quick");
+$("s-topics").onclick = () => goBoard("themes");
+$("s-dash").onclick = () => openSettings();
+$("help").onclick = () => $("hp").showModal();
+$("hp-x").onclick = () => $("hp").close();
+
+// --- fenêtre « + » (liste de mots par-dessus) ---
+function openPopup(id) {
+  const b = db.boards[id], { rows, columns } = b.grid, g = $("pp-g");
+  $("pp-t").textContent = b.name;
+  g.style.gridTemplateColumns = `repeat(${columns}, minmax(0,1fr))`;
+  g.style.fontSize = `calc(${S.size} * 1rem)`;
+  g.replaceChildren();
+  for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) g.append(cellEl(btnOf(b, b.grid.order[r]?.[c]), b, r, c, (x) => { $("pp").close(); press(x, b); }));
+  $("pp").showModal();
+}
+$("pp-x").onclick = () => $("pp").close();
+
+// --- recherche dans tous les tableaux ---
+function runSearch() {
+  const q = norm($("sr-q").value.trim()), r = $("sr-r");
+  r.replaceChildren();
+  if (!q) return;
+  const hits = [];
+  for (const b of Object.values(db.boards)) for (const x of b.buttons) if (x.label && norm(x.label).includes(q)) hits.push([x, b]);
+  hits.sort((a, c) => (norm(c[0].label).startsWith(q) | 0) - (norm(a[0].label).startsWith(q) | 0));
+  r.replaceChildren(...hits.slice(0, 60).map(([x, b]) => {
+    const e = cellEl(x, b, 0, 0, (y) => { $("sr").close(); press(y, b); });
+    const n = document.createElement("small"); n.textContent = b.name; e.append(n);
+    return e;
+  }));
+  if (!hits.length) r.textContent = "Aucun résultat.";
+}
+$("srch").onclick = () => { $("sr-q").value = ""; $("sr-r").replaceChildren(); $("sr").showModal(); $("sr-q").focus(); };
+$("sr-q").oninput = runSearch;
+$("sr-x").onclick = () => $("sr").close();
+
+// --- partager ---
+$("b-shr").onclick = () => { $("sh-t").textContent = msgText() || "(message vide)"; $("sh").showModal(); };
+$("sh-x").onclick = () => $("sh").close();
+$("sh-c").onclick = async () => { try { await navigator.clipboard.writeText(msgText()); $("sh").close(); } catch { ask("Copie impossible.", { cancel: false }); } };
+$("sh-f").onclick = () => { $("sh").close(); saveBlob(new Blob([msgText()], { type: "text/plain" }), "message.txt", "txt"); };
+
+// --- formes de mots (dernier mot du message) ---
+// shortcut: règles régulières seulement (pluriel, féminin, verbes en -er), pas de verbes irréguliers ; ajouter un dictionnaire de conjugaison si besoin.
+function wordForms(w) {
+  const f = [];
+  if (/er$/.test(w) && w.length > 3) {
+    const st = w.slice(0, -2), nous = /g$/.test(st) ? st + "eons" : /c$/.test(st) ? st.slice(0, -1) + "çons" : st + "ons";
+    f.push(["je " + st + "e", "présent"], ["tu " + st + "es", "présent"], ["il " + st + "e", "présent"], ["nous " + nous, "présent"], ["vous " + st + "ez", "présent"], ["ils " + st + "ent", "présent"],
+      ["j'ai " + st + "é", "passé composé"], ["je " + w + "ai", "futur"], ["je " + st + "ais", "imparfait"], ["je vais " + w, "futur proche"]);
+    return f.map(([t, c]) => [t.replace(/^je ([aeiouyéèh])/, "j'$1"), c]);
+  }
+  if (!/[sxz]$/.test(w)) f.push([/(au|eau|eu)$/.test(w) ? w + "x" : /al$/.test(w) ? w.slice(0, -2) + "aux" : w + "s", "pluriel"]);
+  if (!/e$/.test(w)) f.push([w + "e", "féminin"], [w + "es", "féminin pluriel"]);
+  return f;
+}
+function openForms() {
+  const i = msg.map((m) => m.p).lastIndexOf(false), r = $("fm-r");
+  r.replaceChildren();
+  $("fm-w").textContent = i < 0 ? "Compose d'abord un mot." : "Dernier mot : « " + msg[i].label + " »";
+  if (i >= 0) {
+    const forms = wordForms(msg[i].label.toLowerCase());
+    if (!forms.length) r.textContent = "Aucune forme proposée.";
+    for (const [t, c] of forms) {
+      const b = document.createElement("button"); b.type = "button"; b.title = c;
+      b.append(t, Object.assign(document.createElement("small"), { textContent: " " + c }));
+      b.onclick = () => { msg[i] = { ...msg[i], label: t, vocal: "" }; renderMsg(); $("fm").close(); say(t); };
+      r.append(b);
+    }
+  }
+  $("fm").showModal();
+}
+$("fm-x").onclick = () => $("fm").close();
 
 // --- clavier + prédiction ---
 function vocabMap() {
@@ -174,7 +260,7 @@ function renderKbd() {
   keys.append(last);
 }
 function backKey() { if (buf) buf = buf.slice(0, -1); else msg.pop(); renderMsg(); renderKbd(); }
-$("kb").onclick = () => { kbdOpen = !kbdOpen; $("kbd").hidden = !kbdOpen; buf = ""; if (kbdOpen) renderKbd(); scanReset(); };
+$("kb").onclick = () => { kbdOpen = !kbdOpen; $("kb").classList.toggle("on", kbdOpen); $("kbd").hidden = !kbdOpen; buf = ""; if (kbdOpen) renderKbd(); scanReset(); };
 
 // --- balayage (switch) ---
 let scanIdx = -1, scanTimer;
@@ -361,7 +447,7 @@ $("prt").onclick = () => window.print();
 const baseName = (p) => p.split(/[\\/]/).pop();
 async function saveBlob(blob, name, ext) {
   if (T?.dialog) {
-    const p = await T.dialog.save({ defaultPath: name, filters: [{ name: "Open Board Format", extensions: [ext] }] });
+    const p = await T.dialog.save({ defaultPath: name, filters: [{ name: ext === "txt" ? "Texte" : "Open Board Format", extensions: [ext] }] });
     if (p) await T.fs.writeFile(p, new Uint8Array(await blob.arrayBuffer()));
   } else {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
@@ -414,6 +500,9 @@ $("sd").addEventListener("change", (e) => { if (e.target.id === "s-voice") say("
 (async () => {
   try { db = await Store.load(); } catch {}
   if (!db || !db.boards?.[db.root]) db = structuredClone(window.DEFAULT_DB);
+  if ((db.v || 0) < 2) { // v2 : barre latérale, phrases rapides, listes, perso, petits mots, ponctuation ; tableaux créés par l'utilisateur conservés
+    Object.assign(db.boards, structuredClone(window.DEFAULT_DB.boards)); db.root = window.DEFAULT_DB.root; db.v = 2;
+  }
   db.hist ||= {};
   S = db.settings = Object.assign({}, DEF, db.settings);
   stack = [db.root];

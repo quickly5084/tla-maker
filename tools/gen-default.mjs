@@ -26,8 +26,24 @@ const HOME = [
   ["veux","verbe","vouloir"],["aime","verbe","aimer"],["peux","verbe","pouvoir"],["fais","verbe","faire"],["vais","verbe","aller"],["mets","verbe","mettre"],["vois","verbe","voir"],["aide","verbe","aider"],
   ["oui","social"],["non","non"],["pas","non","interdit"],["plus","petit"],["encore","petit"],["stop","non"],["merci","social"],["s'il te plaît","social"],
   ["bon","adj"],["mauvais","adj"],["grand","adj"],["petit","adj"],["chaud","adj"],["froid","adj"],["fini","adj","terminer"],["beau","adj"],
-  ["gens","dossier","famille"],["manger","dossier"],["sentiments","dossier","content"],["lieux","dossier","maison"],["jouer","dossier"],["corps","dossier"],["verbes","dossier","action"],["questions","dossier","question"],
+  ["gens","dossier","famille",{popup:1}],["manger","dossier"],["sentiments","dossier","content"],["lieux","dossier","maison"],["jouer","dossier"],["corps","dossier"],["verbes","dossier","action",{popup:1}],["questions","dossier","question",{popup:1}],
+  ["Listes de mots","dossier","liste",{at:[0,8],load:"themes"}],["Personnel","dossier","personne",{at:[1,8],load:"perso"}],["Petits mots","dossier",false,{at:[2,8],load:"petits"}],
+  ["Ponctuation","dossier",false,{at:[3,8],load:"ponct"}],["Formes de mots","dossier","mot",{at:[4,8],act:":forms"}],
 ];
+const THEMES = ["gens","manger","sentiments","lieux","jouer","corps","verbes","questions"];
+const QUICK = [
+  ["J'ai besoin d'aide","social","aider"],["Je ne comprends pas","non","comprendre"],["Attends s'il te plaît","social","attendre"],["Je veux aller aux toilettes","social","toilettes"],
+  ["J'ai faim","social","faim"],["J'ai soif","social","soif"],["J'ai mal","non","mal"],["Je suis fatigué","social","fatigué"],
+  ["Je veux jouer","verbe","jouer"],["Je veux arrêter","non","arrêter"],["Bonjour","social","bonjour"],["Au revoir","social","au revoir"],
+  ["Merci beaucoup","social","merci"],["Excuse-moi","social","pardon"],["Je t'aime","social","amour"],["Peux-tu répéter ?","quest","répéter"],
+  ["Je ne sais pas","non","ne pas savoir"],["C'est à moi","pron","moi"],["Viens ici","verbe","venir"],["C'est quoi ?","quest","question"],
+];
+const PERSO = [
+  ["mon prénom","pron","personne"],["mon âge","pron",false],["mon adresse","nom","maison"],["mon téléphone","nom","téléphone"],["ma famille","nom","famille"],["mon école","nom","école"],
+  ["mon médecin","nom","médecin"],["ma maîtresse","nom","maîtresse"],["mon ami","nom","ami"],["mon animal","nom","animal"],
+];
+const PETITS = ["à","et","le","la","les","un","une","de","du","des","dans","sur","avec","pour","que","qui","si","mais","ou","donc","ce","mon","ma","mes","ne","se","en","y"].map((w) => [w, "petit", false]);
+const PONCT = [".",",","?","!","'",":",";","…","(",")","-","«","»"].map((w) => [w, "petit", false]);
 const SUB = {
   gens: ["Gens","nom",[["maman"],["papa"],["frère"],["sœur"],["ami"],["mamie","nom","grand-mère"],["papi","nom","grand-père"],["maîtresse"],["docteur","nom","médecin"],["bébé"],["garçon"],["fille"],["famille"],["monsieur"],["madame"],["moi"],["copain"],["voisin"]]],
   manger: ["Manger","nom",[["manger","verbe"],["boire","verbe"],["pain"],["pomme"],["banane"],["eau"],["lait"],["jus"],["gâteau"],["fromage"],["viande"],["poisson"],["légumes"],["pâtes"],["riz"],["soupe"],["œuf"],["glace"]]],
@@ -42,6 +58,7 @@ const SUB = {
 const images = new Map(); // id picto -> image OBF
 const miss = [];
 function img(key, label) {
+  if (key === false) return null;
   const k = norm(key || label);
   const hit = IDX.find((e) => e.k.includes(k)) || IDX.find((e) => e.k.some((w) => w.startsWith(k + " ")));
   if (!hit) { miss.push(label); return null; }
@@ -50,17 +67,25 @@ function img(key, label) {
   return iid;
 }
 const slug = (s) => norm(s).replace(/[^a-z0-9]+/g, "-");
-function board(id, name, rows, cols, items, folder) {
+function board(id, name, rows, cols, items, flow = cols) {
   const buttons = [], order = Array.from({ length: rows }, () => Array(cols).fill(null));
-  items.forEach(([label, cat, key], i) => {
+  items.forEach(([label, cat, key, o = {}], i) => {
     const b = { id: "b" + id + i, label, background_color: CAT[cat][0], border_color: CAT[cat][1] };
     const im = img(key, label); if (im) b.image_id = im;
-    if (cat === "dossier") b.load_board = { id: slug(label) };
-    buttons.push(b); order[Math.floor(i / cols)][i % cols] = b.id;
+    if (o.act) b.action = o.act;
+    else if (cat === "dossier") b.load_board = { id: o.load || slug(label) };
+    if (o.popup) b.ext_tla_popup = true;
+    const [r, c] = o.at || [Math.floor(i / flow), i % flow];
+    buttons.push(b); order[r][c] = b.id;
   });
   return { format: "open-board-0.1", id, locale: "fr", name, grid: { rows, columns: cols, order }, buttons, images: [] };
 }
-const boards = { home: board("home", "Accueil", 5, 8, HOME) };
+const boards = { home: board("home", "Accueil", 5, 9, HOME, 8) };
+boards.themes = board("themes", "Listes de mots", 2, 5, THEMES.map((id) => [SUB[id][0], "dossier", SUB[id][2][0][0], { load: id }]));
+boards.quick = board("quick", "Phrases rapides", 4, 5, QUICK);
+boards.perso = board("perso", "Personnel", 2, 5, PERSO);
+boards.petits = board("petits", "Petits mots", 4, 7, PETITS);
+boards.ponct = board("ponct", "Ponctuation", 2, 7, PONCT);
 for (const [id, [name, cat, items]] of Object.entries(SUB)) boards[id] = board(id, name, 3, 6, items.map(([l, c, k]) => [l, c || cat, k]));
 for (const b of Object.values(boards)) {
   const used = new Set(b.buttons.map((x) => x.image_id));
