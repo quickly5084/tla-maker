@@ -1,6 +1,6 @@
 # Paquet Arch/Omarchy, construit depuis ce dossier : makepkg -f
 pkgname=tla-maker
-pkgver=0.3.0
+pkgver=0.3.1
 pkgrel=1
 pkgdesc="Créateur de tableaux de langage assisté (TLA)"
 arch=(x86_64)

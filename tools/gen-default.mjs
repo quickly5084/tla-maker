@@ -30,7 +30,7 @@ const HOME = [
   ["Listes de mots","dossier","liste",{at:[0,8],load:"themes"}],["Personnel","dossier","personne",{at:[1,8],load:"perso"}],["Petits mots","dossier",false,{at:[2,8],load:"petits"}],
   ["Ponctuation","dossier",false,{at:[3,8],load:"ponct"}],["Formes de mots","dossier","mot",{at:[4,8],act:":forms"}],
 ];
-const THEMES = ["gens","manger","sentiments","lieux","jouer","corps","verbes","questions"];
+const THEMES = ["gens","manger","boulangerie","patisserie","sentiments","lieux","jouer","corps","verbes","questions"];
 const QUICK = [
   ["J'ai besoin d'aide","social","aider"],["Je ne comprends pas","non","comprendre"],["Attends s'il te plaît","social","attendre"],["Je veux aller aux toilettes","social","toilettes"],
   ["J'ai faim","social","faim"],["J'ai soif","social","soif"],["J'ai mal","non","mal"],["Je suis fatigué","social","fatigué"],
@@ -46,12 +46,14 @@ const PETITS = ["à","et","le","la","les","un","une","de","du","des","dans","sur
 const PONCT = [".",",","?","!","'",":",";","…","(",")","-","«","»"].map((w) => [w, "petit", false]);
 const SUB = {
   gens: ["Gens","nom",[["maman"],["papa"],["frère"],["sœur"],["ami"],["mamie","nom","grand-mère"],["papi","nom","grand-père"],["maîtresse"],["docteur","nom","médecin"],["bébé"],["garçon"],["fille"],["famille"],["monsieur"],["madame"],["moi"],["copain"],["voisin"]]],
-  manger: ["Manger","nom",[["manger","verbe"],["boire","verbe"],["pain"],["pomme"],["banane"],["eau"],["lait"],["jus"],["gâteau"],["fromage"],["viande"],["poisson"],["légumes"],["pâtes"],["riz"],["soupe"],["œuf"],["glace"]]],
+  manger: ["Manger","nom",[["manger","verbe"],["boire","verbe"],["pain"],["pomme"],["banane"],["eau"],["lait"],["jus"],["gâteau"],["fromage"],["viande"],["poisson"],["légumes"],["pâtes"],["riz"],["soupe"],["œuf"],["glace","nom","cornet de glace"]]],
   sentiments: ["Sentiments","adj",[["content"],["triste"],["en colère","adj","colère"],["peur"],["fatigué"],["malade"],["faim"],["soif"],["surpris"],["calme"],["gêné"],["jaloux"],["ennui"],["inquiet"],["fier"],["amoureux"],["seul"],["courage"]]],
   lieux: ["Lieux","nom",[["maison"],["école"],["toilettes"],["chambre"],["cuisine"],["jardin"],["parc"],["magasin"],["hôpital"],["voiture"],["bus"],["salle de bain"],["dehors"],["dedans"],["piscine"],["plage"],["ville"],["cinéma"]]],
   jouer: ["Jouer","verbe",[["jouer"],["ballon"],["jeu"],["dessiner"],["livre"],["musique"],["télévision"],["tablette"],["danser"],["chanter"],["vélo"],["balançoire"],["puzzle"],["poupée"],["cubes"],["peinture"],["ordinateur"],["histoire"]]],
   corps: ["Corps","nom",[["tête"],["main"],["pied"],["ventre"],["dos"],["bouche"],["yeux"],["oreille"],["nez"],["bras"],["jambe"],["dent"],["gorge"],["cheveux"],["cœur"],["doigt"],["genou"],["mal"]]],
   verbes: ["Verbes","verbe",[["venir"],["donner"],["prendre"],["ouvrir"],["fermer"],["dormir"],["laver"],["habiller"],["lire"],["écrire"],["écouter"],["parler"],["attendre"],["marcher"],["courir"],["asseoir"],["changer"],["finir","verbe","terminer"]]],
+  boulangerie: ["Boulangerie","nom",[["baguette"],["pain"],["pain de campagne","nom","pain complet"],["pain complet"],["pain de mie"],["pain au chocolat"],["croissant"],["pain aux raisins","nom","brioche"],["chausson aux pommes","nom","chausson"],["brioche"],["ficelle","nom","baguette"],["biscotte"],["viennoiserie","nom","croissant"],["sandwich"],["quiche"],["pizza"],["fougasse","nom","pain"],["pain aux céréales","nom","pain"],["pain au lait","nom","lait"],["petit pain","nom","pain"],["tartine"],["croûte","nom","pain"],["farine"],["beurre"],["fromage"],["jambon"],["salade"],["tomate"]],7],
+  patisserie: ["Pâtisserie","nom",[["gâteau"],["éclair","nom","gâteau au chocolat"],["religieuse","nom","gâteau"],["mille-feuille","nom","gâteau"],["chou à la crème","nom","gâteau"],["tarte aux fruits","nom","tarte"],["tarte aux pommes","nom","tarte"],["tarte au citron","nom","tarte"],["flan"],["paris-brest","nom","gâteau"],["macaron","nom","biscuit"],["madeleine"],["financier","nom","gâteau"],["forêt-noire","nom","gâteau au chocolat"],["fraisier","nom","fraise"],["framboisier","nom","framboise"],["gâteau d'anniversaire","nom","anniversaire"],["galette des rois","nom","galette"],["bûche","nom","gâteau traditionnel"],["crêpe"],["gaufre"],["beignet","nom","beignets"],["donut","nom","doughnut"],["cookie"],["biscuit","nom","biscuits"],["sablé","nom","galettes"],["palmier","nom","gâteaux secs"],["meringue"],["cannelé","nom","gâteau"],["muffin"],["brownie","nom","biscuit au chocolat"],["cupcake","nom","cupcake"],["tarte tatin","nom","tarte"],["chocolat"],["bonbon"],["sucre","nom",false],["confiture"],["chantilly","nom","crème chantilly"],["crème","nom","crème fouettée"],["glace","nom","cornet de glace"]],8],
   questions: ["Questions","quest",[["qui"],["quoi"],["où"],["quand"],["pourquoi"],["comment"],["combien"],["quel"]]],
 };
 
@@ -86,7 +88,7 @@ boards.quick = board("quick", "Phrases rapides", 4, 5, QUICK);
 boards.perso = board("perso", "Personnel", 2, 5, PERSO);
 boards.petits = board("petits", "Petits mots", 4, 7, PETITS);
 boards.ponct = board("ponct", "Ponctuation", 2, 7, PONCT);
-for (const [id, [name, cat, items]] of Object.entries(SUB)) boards[id] = board(id, name, 3, 6, items.map(([l, c, k]) => [l, c || cat, k]));
+for (const [id, [name, cat, items, cols = 6]] of Object.entries(SUB)) boards[id] = board(id, name, Math.max(3, Math.ceil(items.length / cols)), cols, items.map(([l, c, k]) => [l, c || cat, k]));
 for (const b of Object.values(boards)) {
   const used = new Set(b.buttons.map((x) => x.image_id));
   b.images = [...images.values()].filter((i) => used.has(i.id));

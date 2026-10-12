@@ -501,7 +501,10 @@ $("sd").addEventListener("change", (e) => { if (e.target.id === "s-voice") say("
   try { db = await Store.load(); } catch {}
   if (!db || !db.boards?.[db.root]) db = structuredClone(window.DEFAULT_DB);
   if ((db.v || 0) < 2) { // v2 : barre latérale, phrases rapides, listes, perso, petits mots, ponctuation ; tableaux créés par l'utilisateur conservés
-    Object.assign(db.boards, structuredClone(window.DEFAULT_DB.boards)); db.root = window.DEFAULT_DB.root; db.v = 2;
+    Object.assign(db.boards, structuredClone(window.DEFAULT_DB.boards)); db.root = window.DEFAULT_DB.root; db.v = 3;
+  } else if (db.v < 3) { // v3 : boulangerie et pâtisserie (+ liste des thèmes)
+    for (const id of ["themes", "boulangerie", "patisserie"]) db.boards[id] = structuredClone(window.DEFAULT_DB.boards[id]);
+    db.v = 3;
   }
   db.hist ||= {};
   S = db.settings = Object.assign({}, DEF, db.settings);
