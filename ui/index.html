@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TLA Maker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="top">
+  <div id="msg" data-scan title="Toucher pour lire le message"></div>
+  <div id="acts">
+    <button id="b-del" data-scan title="Supprimer le dernier mot">⌫</button>
+    <button id="b-clr" data-scan title="Tout effacer">✕</button>
+    <button id="b-spk" data-scan title="Lire le message">🔊</button>
+  </div>
+</header>
+<nav id="tb">
+  <button id="back" data-scan>◀ Retour</button>
+  <button id="home" data-scan>⌂ Accueil</button>
+  <strong id="title"></strong>
+  <span class="sp"></span>
+  <button id="kb" data-scan title="Clavier avec prédiction">⌨ Clavier</button>
+  <button id="edit" title="Mode édition">✎ Modifier</button>
+  <button id="set" title="Réglages">⚙</button>
+</nav>
+<section id="eb" hidden>
+  <select id="boards" title="Tableau"></select>
+  <button id="bnew">+ Tableau</button><button id="bren">Renommer</button><button id="bdel">Supprimer</button>
+  <label>Lignes <input id="rows" type="number" min="1" max="12"></label>
+  <label>Colonnes <input id="cols" type="number" min="1" max="14"></label>
+  <button id="bhome">Tableau d'accueil</button>
+  <button id="imp">Importer .obz/.obf</button><button id="exp">Exporter .obz</button><button id="expb">Exporter ce tableau .obf</button>
+  <button id="prt">Imprimer</button>
+</section>
+<section id="kbd" hidden>
+  <div id="pred"></div>
+  <div id="keys"></div>
+</section>
+<main id="grid"></main>
+<input id="file" type="file" accept=".obz,.obf,.json,application/zip,application/json" hidden>
+
+<dialog id="dlg">
+  <form method="dialog" id="form">
+    <h3>Bouton</h3>
+    <label>Texte affiché <input id="f-t" maxlength="40"></label>
+    <label>Texte prononcé <input id="f-s" maxlength="120" placeholder="(= texte affiché)"></label>
+    <label>Action
+      <select id="f-a">
+        <option value="">Ajouter au message et parler</option>
+        <option value="load">Ouvrir un tableau (dossier)</option>
+        <option value=":speak">Lire le message</option>
+        <option value=":clear">Effacer le message</option>
+        <option value=":backspace">Supprimer le dernier mot</option>
+        <option value=":space">Espace (valide le mot du clavier)</option>
+        <option value=":home">Accueil</option>
+        <option value=":back">Retour</option>
+      </select>
+    </label>
+    <label id="f-lw">Tableau cible <select id="f-l"></select></label>
+    <label>Catégorie (couleurs) <select id="f-cat"></select></label>
+    <div class="row"><label>Fond <input id="f-bg" type="color"></label><label>Bordure <input id="f-bd" type="color"></label></div>
+    <button type="button" id="f-pick">🔍 Bibliothèque : emojis et dessins</button>
+    <label>Image perso <input id="f-i" type="file" accept="image/*"></label>
+    <div id="f-prev"></div>
+    <label><input id="f-ri" type="checkbox"> Retirer l'image</label>
+    <menu>
+      <button value="ok">Enregistrer</button>
+      <button value="cancel" formnovalidate>Annuler</button>
+      <button type="button" id="f-del">Supprimer</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="pk">
+  <h3>Bibliothèque</h3>
+  <div class="tabs"><button type="button" id="pk-e" class="on">😀 Emojis (1900+)</button><button type="button" id="pk-d">✏️ Dessins ARASAAC (13 800+)</button></div>
+  <input id="pk-q" type="search" placeholder="Rechercher : manger, maison, content…" autocomplete="off">
+  <div id="pk-r"></div>
+  <small id="pk-s"></small>
+  <small>Dessins : © Gouvernement d'Aragon, auteur Sergio Palao, ARASAAC (arasaac.org), licence CC BY-NC-SA — usage non commercial.</small>
+  <menu><button type="button" id="pk-x">Fermer</button></menu>
+</dialog>
+
+<dialog id="sd">
+  <form method="dialog">
+    <h3>Réglages</h3>
+    <label>Voix <select id="s-voice"></select></label>
+    <label>Vitesse <input id="s-rate" type="range" min="0.5" max="1.5" step="0.1"></label>
+    <label>Hauteur <input id="s-pitch" type="range" min="0.5" max="1.5" step="0.1"></label>
+    <label>Quand on touche un bouton
+      <select id="s-mode"><option value="word">Le mot est prononcé tout de suite</option><option value="silent">Rien (lire avec 🔊)</option></select>
+    </label>
+    <label><input id="s-home" type="checkbox"> Retour à l'accueil après un mot</label>
+    <label><input id="s-pred" type="checkbox"> Prédiction de mots au clavier</label>
+    <label>Texte des boutons
+      <select id="s-lab"><option value="bottom">Sous l'image</option><option value="top">Au-dessus</option><option value="none">Image seule</option></select>
+    </label>
+    <label>Taille du texte <input id="s-size" type="range" min="0.7" max="1.8" step="0.1"></label>
+    <label><input id="s-scan" type="checkbox"> Balayage (Espace ou Entrée pour choisir)</label>
+    <label>Vitesse de balayage (secondes) <input id="s-ms" type="number" min="0.4" max="5" step="0.1"></label>
+    <menu><button value="ok">Fermer</button></menu>
+  </form>
+</dialog>
+
+<dialog id="ask"><form method="dialog"><p id="ask-m"></p><input id="ask-i"><menu><button value="ok">OK</button><button value="cancel" id="ask-c" formnovalidate>Annuler</button></menu></form></dialog>
+<script src="emoji-fr.js"></script>
+<script src="pictos-index.js"></script>
+<script src="default-boards.js"></script>
+<script src="store.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

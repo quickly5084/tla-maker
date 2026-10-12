@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=TLA Maker
+Comment=Créateur de tableaux de langage assisté (TLA)
+Exec=tla-maker
+Icon=tla-maker
+Categories=Education;Utility;
+Terminal=false

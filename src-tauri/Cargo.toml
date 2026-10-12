@@ -1,0 +1,23 @@
+[package]
+name = "tla-maker"
+version = "0.2.0"
+edition = "2021"
+description = "Communicateur CAA au format Open Board (TLA)"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "s"
+codegen-units = 1
+panic = "abort"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
